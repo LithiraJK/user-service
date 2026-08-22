@@ -206,6 +206,41 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("User status updated successfully", user));
     }
 
+    /** PUT /api/v1/auth/users/edit/{id} — ADMIN / SUPERADMIN */
+    @PutMapping(value = "/users/edit/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<UserResponse>> adminUpdateUser(
+            @PathVariable Long id,
+            @RequestParam("name") String name,
+            @RequestParam("email") String email,
+            @RequestParam(value = "password", required = false) String password,
+            @RequestParam("roles") String rolesJson,
+            @RequestParam(value = "profileimg", required = false) MultipartFile profileimg) throws Exception {
+
+        Set<Role> roles = new java.util.HashSet<>();
+        if (rolesJson != null && !rolesJson.isBlank()) {
+            List<String> roleStrings = objectMapper.readValue(rolesJson, new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+            for (String r : roleStrings) {
+                roles.add(Role.valueOf(r.toUpperCase().trim()));
+            }
+        }
+
+        String profileImgUrl = null;
+        if (profileimg != null && !profileimg.isEmpty()) {
+            try {
+                profileImgUrl = gcpStorageService.uploadFile(
+                        profileimg.getOriginalFilename(),
+                        profileimg.getBytes(),
+                        profileimg.getContentType()
+                );
+            } catch (Exception e) {
+                System.err.println("[AuthController] GCP Profile Update Upload failed: " + e.getMessage());
+            }
+        }
+
+        UserResponse user = userService.adminUpdateUser(id, name, email, password, roles, profileImgUrl);
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", user));
+    }
+
     /** DELETE /api/v1/auth/delete/{id} — ADMIN / SUPERADMIN */
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {

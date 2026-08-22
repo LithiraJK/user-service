@@ -29,9 +29,12 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // ── Profile ───────────────────────────────────────────────────────────────
@@ -121,5 +124,38 @@ public class UserService {
         }
 
         userRepository.delete(user);
+    }
+
+    /**
+     * Admin-driven user update. Only callable by ADMIN or SUPERADMIN.
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public UserResponse adminUpdateUser(Long userId, String name, String email, String password, java.util.Set<Role> roles, String profileImg) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (user.getRoles().contains(Role.SUPERADMIN)) {
+            throw new RuntimeException("Cannot modify Superadmin details");
+        }
+
+        // Email conflict check
+        if (!user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmail(email)) {
+            throw new com.tripvisito.userservice.exception.EmailAlreadyExistsException("User already exists with this email");
+        }
+
+        user.setName(name);
+        user.setEmail(email.trim().toLowerCase());
+        user.setRoles(roles);
+
+        if (password != null && !password.isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(password));
+        }
+
+        if (profileImg != null && !profileImg.isBlank()) {
+            user.setProfileImg(profileImg);
+        }
+
+        User saved = userRepository.save(user);
+        return UserResponse.from(saved);
     }
 }
