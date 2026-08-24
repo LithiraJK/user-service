@@ -80,6 +80,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(500, ex.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+            "status", 404,
+            "error", "Not Found",
+            "message", "Endpoint not found: " + ex.getResourcePath()
+        ));
+    }
+
     /** Catch-all for unexpected exceptions (500) */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
