@@ -49,8 +49,8 @@ public class GcpStorageService {
             // Upload the file bytes
             storage.create(blobInfo, content);
 
-            // Make the object publicly readable
-            storage.createAcl(blobId, Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
+            // Make the object publicly readable (commented out as uniform bucket-level access is enabled)
+            // storage.createAcl(blobId, Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
 
             String publicUrl = String.format(
                     "https://storage.googleapis.com/%s/%s", bucketName, objectName);
