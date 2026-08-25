@@ -113,7 +113,13 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
 
         return Arrays.stream(cleaned.split(","))
                 .filter(r -> !r.isBlank())
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
+                .map(role -> {
+                    String cleanRole = role.trim().toUpperCase();
+                    if (!cleanRole.startsWith("ROLE_")) {
+                        cleanRole = "ROLE_" + cleanRole;
+                    }
+                    return new SimpleGrantedAuthority(cleanRole);
+                })
                 .collect(Collectors.toList());
     }
 }
